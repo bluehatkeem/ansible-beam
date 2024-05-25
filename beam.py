@@ -51,7 +51,10 @@ class Resource(BaseModel):
 # Initialize OpenAI API key
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-llm = ChatOpenAI(model="gpt-4o")
+llm = ChatOpenAI(
+    model="gpt-4o",
+    temperature=0.4,
+    )
 
 
 parser = YamlOutputParser(pydantic_object=Resource)
