@@ -1,0 +1,8 @@
+---
+- name: install and configure apache webserver  
+  hosts: webservers
+  become: true
+  roles:
+    - sample-apache
+...
+

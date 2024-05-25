@@ -1,0 +1,10 @@
+---
+- name: Install Zabbix agent 
+  hosts: all
+  become: true
+  vars:
+    zabbix_agent_server: 192.168.2.63
+  tasks:
+    - include_role: 
+        name: dj-wasabi.zabbix-agent
+

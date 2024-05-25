@@ -1,0 +1,11 @@
+---
+- name: Testing grabbing variables
+  hosts: all
+  become: true
+  tasks:
+    - name: Using debug module to grap a fact
+      debug:
+#        msg: "The partition is less than {{ ansible_devices.sda.partitions.sda1.size }}"
+        msg: "Devices are  {{ansible_mounts | map(attribute='device') | list }}"
+#      when: (ansible_devices.sda.removable | int) < 0 
+#      when: (ansible_devices.sda.partitions.sda1.virtual | int) <  

@@ -1,0 +1,9 @@
+---
+- name: Mysql role
+  hosts: almanode1
+  become: true 
+  vars_files:
+    - ../vars/secrets.yml
+  tasks:
+   - import_role: 
+       name: sample-mysql

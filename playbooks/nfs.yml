@@ -1,0 +1,18 @@
+---
+- hosts: all
+  become: true
+
+  tasks:
+  - name: check NFS mount names
+    shell: mount | grep nfs | awk '{print $1}'
+    register: mount_names
+
+  - name: write mount names to file
+    copy:
+      content: "{{ mount_names.stdout }}"
+      dest: "/tmp/nfs_mount_names.txt"
+
+  - name: fetch output file
+    fetch:
+      src: "/tmp/nfs_mount_names.txt"
+      dest: "./nfs_mount_names.txt"

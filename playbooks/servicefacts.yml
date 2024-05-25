@@ -1,0 +1,37 @@
+---
+- name: service fact
+  hosts: all
+  become: true
+  gather_facts: yes
+  tasks:
+    - name: 
+      service_facts:
+
+    - name:
+      debug:
+        var: ansible_facts.services['sssd.service']['state']
+
+    - name: this is a machine
+      debug:
+        msg: "this is {{ inventory_hostname }}"
+    - name:
+      debug:
+#        var: ansible_lvm.lvs.root.size_g | int
+        var: ansible_lvm.lvs.root.size_g | float
+
+    - name: Ensure OPT large enough for package
+      assert:
+        that:
+          - ansible_lvm.lvs.root is defined
+          - ansible_lvm.lvs.root.size_g | float  > 25
+        fail_msg: lv is too small
+        success_msg: Root is Large enough
+
+    - name:
+      debug:
+        var: ansible_facts['default_ipv4']['address']
+#      when: (ansible_lvm.lvs.root.size_g <= "20" and inventory_hostname in groups['database'])
+      when: 
+        - ansible_lvm.lvs.root.size_g | int  > 25 
+        - inventory_hostname in groups['alma,docker']
+

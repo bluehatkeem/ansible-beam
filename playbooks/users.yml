@@ -1,0 +1,41 @@
+---
+- name: users playbook 
+  hosts: all 
+  become: true 
+  vars_files: 
+    - ../vars/secrets.yml 
+    - ../vars/user_list.yml
+  tasks:
+    - name: create webserver users
+      user:
+        name: "{{ item.username }}"
+        state: present
+        shell: /bin/bash
+        uid: "{{ item.uid }}"
+        group: wheel
+        password: " {{ pass | password_hash('sha512') }}"
+      when: "inventory_hostname in groups [ 'webservers' ] and item.uid|string|first == '1'"
+      with_items: "{{ users }}"
+
+
+    - name: create database users
+      user:
+        name: "{{ item.username }}"
+        state: present
+        shell: /bin/bash
+        uid: "{{ item.uid }}"
+        group: wheel
+        password: " {{ pass | password_hash('sha512') }}"
+      when: "inventory_hostname in groups [ 'database' ] and item.uid|string|first == '2'"
+      #      when: "'database' in group_names and item.uid|string|first == '2'"
+      with_items: "{{ users }}"
+
+
+    - name: Copy SSH Key
+      authorized_key:
+        user: "{{ item.username }}"
+        state: present
+        key: "{{ lookup('file', '/home/svc-ansible/.ssh/id_rsa.pub') }}"
+      with_items: "{{ users }}"
+
+

@@ -1,0 +1,14 @@
+---
+- name: Install and configure Vim and JDK8
+  hosts: all
+  become: true
+  tasks:
+    - name: Install Vim
+      yum:
+        name: vim
+        state: present
+
+    - name: Install JDK8
+      yum:
+        name: java-1.8.0-openjdk
+        state: present

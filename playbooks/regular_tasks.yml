@@ -1,0 +1,20 @@
+---
+- hosts: proxy
+  become: yes
+  tasks:
+    - name: Crontab entry 
+      cron: 
+        name: Append time log with date
+        user: root
+        minute: 0
+        job: "date > /var/log/time.log" 
+
+    - name: Check Root Crontab
+      shell: "crontab -lu root"
+      register: cron
+    
+
+    - name: Output Crontabx
+      debug:
+        var: cron.stdout_lines
+      

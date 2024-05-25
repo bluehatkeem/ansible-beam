@@ -1,0 +1,68 @@
+Metadata-Version: 2.1
+Name: pinecone-notebooks
+Version: 0.1.1
+Summary: Helpers for using Pinecone with notebooks
+Home-page: https://www.pinecone.io
+License: Apache-2.0
+Keywords: Pinecone,vector,database,cloud,jupyter,colab,notebooks
+Author: Pinecone Systems, Inc.
+Author-email: support@pinecone.io
+Requires-Python: >=3.10,<4.0
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: Information Technology
+Classifier: Intended Audience :: Science/Research
+Classifier: Intended Audience :: System Administrators
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Topic :: Database
+Classifier: Topic :: Software Development
+Classifier: Topic :: Software Development :: Libraries
+Classifier: Topic :: Software Development :: Libraries :: Application Frameworks
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Project-URL: Documentation, https://pinecone.io/docs
+Description-Content-Type: text/markdown
+
+# Pinecone helpers for notebooks
+This package contains helper functions for working with Pinecone in the context of a Jupyter or
+Google Colab notebook.
+
+## Google Colab
+### Authenticate
+This helper function displays a widget to allow the user to authenticate with Pinecone. Once the
+user authenticates, they are prompted to select the Pinecone organization and project that they want
+to grant access to. An API key is then generated and set as the environment variable
+`PINECONE_API_KEY`.
+#### Usage
+To display the authentication widget:
+```py
+from pinecone_notebooks.colab import Authenticate
+
+Authenticate()
+```
+Note that any usage of the API key should take place in a later cell. The user must complete the
+authentication flow before the `PINECONE_API_KEY` environment variable can be used.
+```py
+from pinecone import Pinecone
+
+api_key = os.environ.get('PINECONE_API_KEY')
+pinecone_client = Pinecone(api_key=api_key)
+
+# ... proceed to use pinecone_client to create indexes, upload data, query, etc.
+```
+##### source_tag
+The `Authenticate` function has an optional `source_tag` parameter. Pinecone partners should set
+this value to receive attribution credit for users of their notebooks who signup to Pinecone.
+```py
+from pinecone_notebooks.colab import Authenticate
+
+Authenticate(source_tag='MyAwesomeApp')
+```
+
+## Jupyter
+Coming soon!
+

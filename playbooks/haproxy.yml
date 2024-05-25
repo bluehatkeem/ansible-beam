@@ -1,0 +1,10 @@
+---
+- name: install HAProxy
+  hosts: proxy
+  become: true
+  vars:
+    - haproxy_backend_balance_method: 'roundrobin'
+    - haproxy_backend_mode: 'http'
+  roles:
+    - geerlingguy.haproxy 
+
