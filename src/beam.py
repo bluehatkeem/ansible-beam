@@ -1,104 +1,29 @@
+
 import os
-import time
-import sys
-import openai
-from operator import itemgetter
-from langchain_openai import ChatOpenAI
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.chains.question_answering import load_qa_chain
 from langchain_community.document_loaders import DirectoryLoader
-from pinecone import Pinecone, ServerlessSpec
 from langchain_pinecone import PineconeVectorStore
-from langchain.prompts import ChatPromptTemplate
-from langchain_openai.embeddings import OpenAIEmbeddings
-from langchain_core.runnables import RunnablePassthrough
-from typing import Union
-from langchain_core.prompts import PromptTemplate
 import nltk
-from dotdot import print_with_ellipsis as pwe
-from langchain.output_parsers.json import SimpleJsonOutputParser
-from langchain.output_parsers import YamlOutputParser
-from langchain_core.pydantic_v1 import BaseModel, Field
-from langchain_core.output_parsers import JsonOutputParser
-from template import template
 from colors import bcolors
 from langsmith.wrappers import wrap_openai
 from langsmith import traceable
-from langchain_community.llms.ollama import Ollama
+from llm_model import llm
+from llm_model import parser
+from llm_model import template
+from llm_model import prompt
+from llm_model import embeddings
+
+
+
 
 
 nltk.download("punkt")
 
 
-class PlaybookResource(BaseModel):
-    """Used to Generate an Ansible playbook only"""
-
-    resource_type: str = Field(
-        description="The type of Ansible resource to generate (playbooks/roles)."
-    )
-    file_name: str = Field(
-        description="The name of the ansible playbook being generated i.e remove_vim.yml"
-    )
-    playbook: str = Field(description="The generated Ansible playbook in JSON format.")
 
 
-class RoleResource(BaseModel):
-    """Used to Generate an Ansible role only"""
 
-    resource_type: str = Field(
-        description="The type of Ansible resource to generate (playbooks/roles)."
-    )
-    file_name: str = Field(
-        description="The name of the ansible role resource dir being generated i.g roles/remove_vim"
-    )
-    task: str = Field(description="The generated Ansible resource in the tasks/ dir.")
-    handlers: str = Field(
-        description="The generated Ansible resource in the handler/ dir."
-    )
-    vars: str = Field(description="The generated Ansible resource in the vars/ dir.")
-    defaults: str = Field(
-        description="The generated Ansible resource in the defaults/ dir."
-    )
-    file: str = Field(description="The generated Ansible resource in the files/ dir.")
-    meta: str = Field(description="The generated Ansible resource in the meta/ dir.")
-
-
-class Resource(BaseModel):
-    output: Union[PlaybookResource, RoleResource]
-
-
-# Initialize OpenAI API key
-openai.api_key = os.getenv("OPENAI_API_KEY")
-
-llm = ChatOpenAI(
-    model="gpt-4o",
-    temperature=0.4,
-)
-
-# llm = Ollama(
-#     model="llama3",
-#     base_url="http://keemgpt.kubeworld.io:11434"
-#     )
-
-
-parser = YamlOutputParser(pydantic_object=Resource)
-
-
-# template = template.replace("{resource_type}", "playbook")
-
-prompt = ChatPromptTemplate.from_template(
-    template,
-    partial_variables={"format_instructions": parser.get_format_instructions()},
-)
-
-pinecone_api_key = os.getenv("PINECONE_API_KEY")
-
-pc = Pinecone(api_key=pinecone_api_key)
-
-model = ChatOpenAI(model="gpt-4o")
-
-# initializing the embeddings
-embeddings = OpenAIEmbeddings()
 
 
 def get_user_input():
@@ -174,18 +99,19 @@ index_name = "ansible-playbooks"
 def save_ansible_resource(resource_type, file_name, content):
     output_dir = f"./{resource_type}"
     os.makedirs(output_dir, exist_ok=True)
-    file_path = os.path.join(output_dir, file_name)
+    # file_path = os.path.join(output_dir, file_name)
 
-    if resource_type == "playbooks":
-        with open(file_path, "w") as file:
-            file.write(content)
+    if resource_type == "playbook":
+        # with open(file_path, "w") as file:
+        #     file.write(content)
         print(
-            f"{bcolors.OKGREEN}SUCCESS:{bcolors.ENDC}{resource_type.capitalize()} generated and saved to {file_path}"
+            f"{bcolors.OKGREEN}SUCCESS:{bcolors.ENDC}{resource_type.capitalize()} generated and saved to /file_path/"
         )
     elif resource_type == "role":
         for subfile_name, subfile_content in content.items():
-            subfile_path = os.path.join(output_dir, subfile_name)
-            os.makedirs(os.path.dirname(subfile_path), exist_ok=True)
+            subfile_dir = os.path.join(output_dir, file_name)
+            os.makedirs(subfile_dir, exist_ok=True)
+            subfile_path = os.path.join(subfile_dir, subfile_name)
             with open(subfile_path, "w") as subfile:
                 subfile.write(subfile_content)
             print(
@@ -227,11 +153,13 @@ def main():
 
     # Check resource type and print accordingly
     if resource_type == "role":
-        print(f"task/main.yml:\n{new_resource.output.task}")
+        print(new_resource.output.resource_type)
+        print(new_resource.output.file_name)
+        print(f"task/main.yml:\n{new_resource.output.tasks}")
         print(f"handlers/main.yml:\n{new_resource.output.handlers}")
         print(f"vars/main.yml:\n{new_resource.output.vars}")
         print(f"defaults/main.yml:\n{new_resource.output.defaults}")
-        print(f"files:\n{new_resource.output.file}")
+        print(f"files:\n{new_resource.output.files}")
         print(f"meta/main.yml:\n{new_resource.output.meta}")
     elif resource_type == "playbook":
         print(new_resource.output.playbook)
@@ -241,20 +169,20 @@ def main():
         f"{bcolors.WARNING}Do you want to save the generated Ansible resource? (yes/no): {bcolors.ENDC}"
     )
     if confirmation.lower() == "yes":
-        if new_resource.output.resource_type == "role":
+        if resource_type == "role":
             save_ansible_resource(
                 new_resource.output.resource_type,
                 new_resource.output.file_name,
                 {
-                    "task/main.yml": new_resource.output.task,
+                    "tasks/main.yml": new_resource.output.tasks,
                     "handlers/main.yml": new_resource.output.handlers,
                     "vars/main.yml": new_resource.output.vars,
                     "defaults/main.yml": new_resource.output.defaults,
-                    "files": new_resource.output.file,
+                    "files/": new_resource.output.files,
                     "meta/main.yml": new_resource.output.meta,
                 },
             )
-        elif new_resource.output.resource_type == "playbook":
+        elif resource_type == "playbook":
             save_ansible_resource(
                 new_resource.output.resource_type,
                 new_resource.output.file_name,
