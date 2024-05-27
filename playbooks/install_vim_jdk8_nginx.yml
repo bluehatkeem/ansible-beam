@@ -1,0 +1,23 @@
+---
+- name: Install and configure Vim, JDK8, and Nginx
+  hosts: all
+  become: true
+
+  vars_files:
+    - vars/main.yml
+
+  tasks:
+    - name: Install Vim
+      yum:
+        name: vim
+        state: present
+
+    - name: Install JDK8
+      yum:
+        name: java-1.8.0-openjdk
+        state: present
+
+    - name: Install Nginx from binary
+      yum:
+        name: nginx
+        state: present

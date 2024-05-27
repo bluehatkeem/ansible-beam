@@ -16,7 +16,7 @@ class PlaybookResource(BaseModel):
     """Used to Generate an Ansible playbook only"""
 
     resource_type: str = Field(
-        description="The type of resource."
+        description="The type of resource. should only be 'playbooks'."
     )
     file_name: str = Field(
         description="The name of the ansible playbook being generated."
@@ -29,7 +29,7 @@ class RoleResource(BaseModel):
     """Used to Generate an Ansible role only"""
 
     resource_type: str = Field(
-        description="The type of Ansible resource to generate (playbooks/roles)."
+        description="The type of Ansible resource to generate. should always be 'roles'."
     )
     file_name: str = Field(
         description="The name of the ansible role resource dir being generated."
@@ -57,7 +57,7 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 # Initialize ChatOpenAI instance
 llm = ChatOpenAI(
     model="gpt-4o",
-    temperature=0.4,
+    temperature=0.2,
 )
 
 # Initialize YamlOutputParser instance

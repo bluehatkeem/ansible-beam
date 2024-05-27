@@ -1,0 +1,71 @@
+---
+- name: Install Docker and deploy Traefik and Portainer
+  hosts: all
+  become: true
+
+  vars:
+    docker_package: docker
+    traefik_image: traefik:latest
+    portainer_image: portainer/portainer-ce:latest
+
+  tasks:
+    - name: Install required packages
+      yum:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - yum-utils
+        - device-mapper-persistent-data
+        - lvm2
+
+    - name: Add Docker repository
+      command: >
+        yum-config-manager
+        --add-repo
+        https://download.docker.com/linux/centos/docker-ce.repo
+
+    - name: Install Docker
+      yum:
+        name: "{{ docker_package }}"
+        state: present
+
+    - name: Start and enable Docker service
+      systemd:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Pull Traefik Docker image
+      docker_image:
+        name: "{{ traefik_image }}"
+        source: pull
+
+    - name: Pull Portainer Docker image
+      docker_image:
+        name: "{{ portainer_image }}"
+        source: pull
+
+    - name: Deploy Traefik container
+      docker_container:
+        name: traefik
+        image: "{{ traefik_image }}"
+        ports:
+          - "80:80"
+          - "443:443"
+        volumes:
+          - "/var/run/docker.sock:/var/run/docker.sock"
+        command: >
+          --api.insecure=true
+          --providers.docker=true
+          --entrypoints.web.address=:80
+          --entrypoints.websecure.address=:443
+
+    - name: Deploy Portainer container
+      docker_container:
+        name: portainer
+        image: "{{ portainer_image }}"
+        ports:
+          - "9000:9000"
+        volumes:
+          - "/var/run/docker.sock:/var/run/docker.sock"
+          - "portainer_data:/data"
