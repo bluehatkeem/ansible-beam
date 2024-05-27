@@ -11,19 +11,20 @@ from typing import Union
 from template import template
 from langsmith import traceable
 
-
+# Define the PlaybookResource class
 class PlaybookResource(BaseModel):
     """Used to Generate an Ansible playbook only"""
 
     resource_type: str = Field(
-        description="The type of Ansible resource to generate (playbooks/roles)."
+        description="The type of resource."
     )
     file_name: str = Field(
-        description="The name of the ansible playbook being generated i.e remove_vim.yml"
+        description="The name of the ansible playbook being generated."
     )
     playbook: str = Field(description="The generated Ansible playbook in JSON format.")
 
 
+# Define the RoleResource class
 class RoleResource(BaseModel):
     """Used to Generate an Ansible role only"""
 
@@ -31,7 +32,7 @@ class RoleResource(BaseModel):
         description="The type of Ansible resource to generate (playbooks/roles)."
     )
     file_name: str = Field(
-        description="The name of the ansible role resource dir being generated i.g remove_vim"
+        description="The name of the ansible role resource dir being generated."
     )
     tasks: str = Field(description="The generated Ansible resource in the tasks/ dir.")
     handlers: str = Field(
@@ -45,43 +46,37 @@ class RoleResource(BaseModel):
     meta: str = Field(description="The generated Ansible resource in the meta/ dir.")
 
 
+# Define the Resource class
 class Resource(BaseModel):
     output: Union[PlaybookResource, RoleResource]
 
+
 # Initialize OpenAI API key
-
-
-
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
+# Initialize ChatOpenAI instance
 llm = ChatOpenAI(
     model="gpt-4o",
     temperature=0.4,
 )
 
-# llm = Ollama(
-#     model="llama3",
-#     base_url="http://keemgpt.kubeworld.io:11434"
-#     )
-
-
+# Initialize YamlOutputParser instance
 parser = YamlOutputParser(pydantic_object=Resource)
 
-
-# template = template.replace("{resource_type}", "playbook")
-
+# Initialize ChatPromptTemplate instance
 prompt = ChatPromptTemplate.from_template(
     template,
     partial_variables={"format_instructions": parser.get_format_instructions()},
 )
 
+# Initialize Pinecone API key
 pinecone_api_key = os.getenv("PINECONE_API_KEY")
 
+# Initialize Pinecone instance
 pc = Pinecone(api_key=pinecone_api_key)
 
+# Initialize ChatOpenAI instance
 model = ChatOpenAI(model="gpt-4o")
 
-# initializing the embeddings
+# Initialize OpenAIEmbeddings instance
 embeddings = OpenAIEmbeddings()
-
-
