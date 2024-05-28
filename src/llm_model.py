@@ -1,5 +1,6 @@
 import os
 import openai
+from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from pinecone import Pinecone, ServerlessSpec
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
@@ -11,6 +12,10 @@ from typing import Union
 from template import template
 from langsmith import traceable
 from langchain.memory import ConversationBufferMemory
+from langchain_core.prompts.chat import (
+    HumanMessagePromptTemplate,
+    SystemMessagePromptTemplate,
+)
 
 
 # Define the PlaybookResource class
@@ -67,10 +72,9 @@ parser = YamlOutputParser(pydantic_object=Resource)
 
 # Initialize ChatPromptTemplate instance
 prompt = ChatPromptTemplate.from_messages([
-    (template),
-    MessagesPlaceholder(variable_name="chat_history"),
+    SystemMessagePromptTemplate.from_template(template),
+    MessagesPlaceholder(variable_name="chat_history", optional=True),
     ("human", "{description}"), 
-    # ("human", "Given the above {chat_history} come up mith any requested modifications to the {resource_type}."),
 ])
 
 memory = ConversationBufferMemory(
@@ -79,6 +83,7 @@ memory = ConversationBufferMemory(
 
 )
 
+load_dotenv()
 
 # Initialize Pinecone API key
 pinecone_api_key = os.getenv("PINECONE_API_KEY")

@@ -1,5 +1,6 @@
 import os
 import nltk
+from dotenv import load_dotenv
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.chains.question_answering import load_qa_chain
 from langchain_community.document_loaders import DirectoryLoader
@@ -7,12 +8,14 @@ from langchain_pinecone import PineconeVectorStore
 from colors import bcolors
 from langsmith.wrappers import wrap_openai
 from langsmith import traceable
-from llm_model import llm, parser, template, prompt, embeddings
+from llm_model import llm, parser, template, prompt, embeddings, memory
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_community.chat_message_histories import ChatMessageHistory
 
+# from langchain.chains.llm import LLMChain
 
+load_dotenv()
 
 nltk.download("punkt")
 
@@ -71,12 +74,16 @@ class AnsibleResourceGenerator:
             | llm
             | parser
         )
+
+        # chain2 = LLMChain(
+        #     llm,
+        #     prompt,
+        #     output_parser=parser,
+        #     verbose=True,
+        #     memory=memory,
+        # )
+
         return chain
-
-    
-
-
-   
 
     def generate_resource(self, chain, description, resource_type):
 
@@ -92,10 +99,10 @@ class AnsibleResourceGenerator:
 
         new_resource = RunnableWithMessageHistory(
             chain,
-            get_session_history,
+            get_session_history=get_session_history,
             input_messages_key="description",
             history_messages_key="chat_history",
-    )
+        )
         new_resource = chain.invoke(
             {"description": description, "resource_type": resource_type, "format_instructions": parser.get_format_instructions()},
             config={"configurable": {"session_id": "abc123"}},
@@ -132,10 +139,9 @@ class AnsibleResourceGenerator:
         docs = self.split_docs(playbooks)
         retriever = self.create_vector_store(docs)
         chain = self.define_processing_chain(retriever)
-        
+
         while True: 
             new_resource = self.generate_resource(chain, description, resource_type)
-
 
             if resource_type in ["role", "roles"]:
                 print(new_resource.output.resource_type)
@@ -162,7 +168,7 @@ class AnsibleResourceGenerator:
         confirmation = input(
             f"{bcolors.WARNING}Do you want to save the generated Ansible resource? (yes/no): {bcolors.ENDC}"
         )
-        
+
         if confirmation.lower() in ["yes", "y"]:
             if resource_type in ["role", "roles"]:
                 self.save_ansible_resource(
