@@ -17,6 +17,7 @@ from langchain_core.prompts.chat import (
     SystemMessagePromptTemplate,
 )
 
+load_dotenv()
 
 # Define the PlaybookResource class
 class PlaybookResource(BaseModel):
@@ -83,7 +84,7 @@ memory = ConversationBufferMemory(
 
 )
 
-load_dotenv()
+
 
 # Initialize Pinecone API key
 pinecone_api_key = os.getenv("PINECONE_API_KEY")
