@@ -2,7 +2,6 @@ import os
 import openai
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
-from langchain_anthropic import ChatAnthropic
 from pinecone import Pinecone, ServerlessSpec
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_openai.embeddings import OpenAIEmbeddings
@@ -69,10 +68,6 @@ llm = ChatOpenAI(
     temperature=0,
 )
 
-# llm = ChatAnthropic(
-#     model="claude-3-5-sonnet-20240620"
-# )
-
 # Initialize YamlOutputParser instance
 parser = YamlOutputParser(pydantic_object=Resource)
 
@@ -89,8 +84,8 @@ contextualize_q_prompt = ChatPromptTemplate.from_messages(
 # Initialize ChatPromptTemplate instance
 prompt = ChatPromptTemplate.from_messages([
     SystemMessagePromptTemplate.from_template(template),
-    ("placeholder", "{chat_history}"),
-    ("human", "{description}"), 
+    # MessagesPlaceholder(variable_name="chat_history", optional=True),
+    # ("human", "{description}"), 
 ])
 
 memory = ConversationBufferMemory(
@@ -108,7 +103,7 @@ pinecone_api_key = os.getenv("PINECONE_API_KEY")
 pc = Pinecone(api_key=pinecone_api_key)
 
 # Initialize ChatOpenAI instance
-model = ChatOpenAI(model="gpt-4o", temperature="0")
+model = ChatOpenAI(model="gpt-4o")
 
 # Initialize OpenAIEmbeddings instance
 embeddings = OpenAIEmbeddings()
