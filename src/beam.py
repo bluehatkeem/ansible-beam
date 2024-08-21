@@ -21,7 +21,7 @@ nltk.download("punkt")
 
 class AnsibleResourceGenerator:
     def __init__(self):
-        self.index_name = "ansible-playbooks"
+        self.index_name = os.getenv("PINECONE_INDEX_NAME") 
 
     def get_user_input(self):
         while True:
@@ -39,7 +39,7 @@ class AnsibleResourceGenerator:
 
     def load_docs(self):
         print(f"{bcolors.OKGREEN}Loading playbooks into document loader... {bcolors.ENDC}")
-        playbook_path = os.path.join(os.getcwd(), "playbooks")
+        playbook_path = os.path.join(os.getenv("ANSIBLE_HOME"), "playbooks")
         playbook_loader = DirectoryLoader(
             path=playbook_path, glob="**/*.yml", show_progress=False
         )
@@ -130,7 +130,7 @@ class AnsibleResourceGenerator:
                 with open(subfile_path, "w") as subfile:
                     subfile.write(subfile_content)
                 print(
-                    f"{bcolors.OKGREEN}SUCCESS:{bcolors.ENDC}{resource_type.capitalize()} generated and saved to {subfile_path}"
+                     f"{bcolors.OKGREEN}SUCCESS:{bcolors.ENDC}{subfile_name.split('/')[0].capitalize()} generated and saved to {subfile_path}"
                 )
 
     def run(self):
