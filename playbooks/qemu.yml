@@ -1,8 +1,0 @@
----
-- name: install qemu agent 
-  hosts: all
-  become: true
-  tasks:
-    - import_role:
-       name: qemu
-

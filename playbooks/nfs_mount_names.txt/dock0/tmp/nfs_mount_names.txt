@@ -1,9 +1,0 @@
-sunrpc
-thebox.kubeworld.io:/mnt/kube/nextcloud-db
-thebox.kubeworld.io:/mnt/M2/pics-storage
-thebox.kubeworld.io:/mnt/kube/nextcloud-data/root/data
-thekube.kubeworld.io:/mnt/kwmedia/jelly
-thebox.kubeworld.io:/mnt/kube/nextcloud-db
-thebox.kubeworld.io:/mnt/kube/nextcloud-data/root/data
-thebox.kubeworld.io:/mnt/M2/pics-storage
-thekube.kubeworld.io:/mnt/kwmedia/jelly

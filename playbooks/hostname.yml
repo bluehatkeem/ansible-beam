@@ -1,7 +1,0 @@
----
-- hosts: all
-  become: yes
-  gather_facts: no 
-  tasks:
-    - name: run script
-      script: hostname.sh
