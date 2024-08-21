@@ -27,7 +27,7 @@ Before you start, ensure you have the following:
 
 ## 🚀 Usage
 
-1. Ensure you are in a directory that contains `playbook` and `role` subdirectories. The script expects these to exist for the save function to work.
+1. Ensure your ansible home directory contains `playbook` and `role` subdirectories. The script expects these to exist for the save function to work.
 
 2. Run the `beam.py` command:
     ```bash
