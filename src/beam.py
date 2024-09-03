@@ -5,13 +5,19 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.chains.question_answering import load_qa_chain
 from langchain_community.document_loaders import DirectoryLoader
 from langchain_pinecone import PineconeVectorStore
+from langchain.chains.history_aware_retriever import create_history_aware_retriever
 from colors import bcolors
 from langsmith.wrappers import wrap_openai
 from langsmith import traceable
-from llm_model import llm, parser, template, prompt, embeddings, memory
+from llm_model import llm, parser, template, prompt, embeddings, memory, contextualize_q_prompt
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_community.chat_message_histories import ChatMessageHistory
+from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain import hub
+from langchain.chains.retrieval import create_retrieval_chain
+from langchain_core.messages import AIMessage, HumanMessage
+
 
 # from langchain.chains.llm import LLMChain
 
@@ -21,7 +27,7 @@ nltk.download("punkt")
 
 class AnsibleResourceGenerator:
     def __init__(self):
-        self.index_name = "ansible-playbooks"
+        self.index_name = os.getenv("PINECONE_INDEX_NAME") 
 
     def get_user_input(self):
         while True:
@@ -62,55 +68,39 @@ class AnsibleResourceGenerator:
         )
         return retriever
 
-    def define_processing_chain(self, retriever):
-        chain = (
-            {
-                "context": (lambda x: x["description"]) | retriever,
-                "description": (lambda x: x["description"]),
-                "format_instructions": (lambda x: x["format_instructions"]),
-                "resource_type": (lambda x: x["resource_type"]),
-            }
-            | prompt
-            | llm
-            | parser
-        )
+    
+    def generate_resource(self, resource_type, description, retriever):
 
-        # chain2 = LLMChain(
-        #     llm,
-        #     prompt,
-        #     output_parser=parser,
-        #     verbose=True,
-        #     memory=memory,
-        # )
+        new_resource_chain = create_stuff_documents_chain(llm, prompt, output_parser=parser)
 
-        return chain
+        history_aware_retriever = create_history_aware_retriever(llm, retriever, contextualize_q_prompt)
 
-    def generate_resource(self, chain, description, resource_type):
+        rag_chain = create_retrieval_chain(history_aware_retriever, new_resource_chain)
+
+        store = {}
 
         def get_session_history(session_id: str) -> BaseChatMessageHistory:
+                
+                if session_id not in store:
+                    store[session_id] = ChatMessageHistory()
+                return store[session_id]
+        
+        conversation = RunnableWithMessageHistory(
+            rag_chain,
+            get_session_history,
+            input_messages_key="description",
+            history_messages_key="chat_history",
+            output_messages_key="answer",
+        )
 
-            store = {}
-
-            if session_id not in store:
-                store[session_id] = ChatMessageHistory()
-            return store[session_id]
+        new_resource = conversation.invoke({"description": description,  "resource_type": resource_type, "input": description, "format_instructions": parser.get_format_instructions()}, config={"configurable": {"session_id": "abc124"}})
 
         print(f"{bcolors.OKCYAN}Generating Ansible resource ... {bcolors.ENDC}")
 
-        new_resource = RunnableWithMessageHistory(
-            chain,
-            get_session_history=get_session_history,
-            input_messages_key="description",
-            history_messages_key="chat_history",
-        )
-        new_resource = chain.invoke(
-            {"description": description, "resource_type": resource_type, "format_instructions": parser.get_format_instructions()},
-            config={"configurable": {"session_id": "abc123"}},
-        )
         return new_resource
 
     def save_ansible_resource(self, resource_type, file_name, content):
-        output_dir = f"./{resource_type}"
+        output_dir = os.path.join(os.getenv("ANSIBLE_HOME"), resource_type)
         os.makedirs(output_dir, exist_ok=True)
 
         if resource_type in ["playbook", "playbooks"]:
@@ -130,7 +120,7 @@ class AnsibleResourceGenerator:
                 with open(subfile_path, "w") as subfile:
                     subfile.write(subfile_content)
                 print(
-                    f"{bcolors.OKGREEN}SUCCESS:{bcolors.ENDC}{resource_type.capitalize()} generated and saved to {subfile_path}"
+                    f"{bcolors.OKGREEN}SUCCESS:{bcolors.ENDC}{subfile_name.split('/')[0].capitalize()} generated and saved to {subfile_path}"
                 )
 
     def run(self):
@@ -138,22 +128,22 @@ class AnsibleResourceGenerator:
         playbooks = self.load_docs()
         docs = self.split_docs(playbooks)
         retriever = self.create_vector_store(docs)
-        chain = self.define_processing_chain(retriever)
 
         while True: 
-            new_resource = self.generate_resource(chain, description, resource_type)
+            new_resource = self.generate_resource( resource_type, description, retriever)
 
             if resource_type in ["role", "roles"]:
-                print(new_resource.output.resource_type)
-                print(new_resource.output.file_name)
-                print(f"tasks/main.yml:\n{new_resource.output.tasks}")
-                print(f"handlers/main.yml:\n{new_resource.output.handlers}")
-                print(f"vars/main.yml:\n{new_resource.output.vars}")
-                print(f"defaults/main.yml:\n{new_resource.output.defaults}")
-                print(f"files/config_file:\n{new_resource.output.files}")
-                print(f"meta/main.yml:\n{new_resource.output.meta}")
+                print(new_resource["answer"].output.resource_type)
+                print(new_resource["answer"].output.file_name)
+                print(f'tasks/main.yml:\n{new_resource["answer"].output.tasks}')
+                print(f'handlers/main.yml:\n{new_resource["answer"].output.handlers}')
+                print(f'vars/main.yml:\n{new_resource["answer"].output.vars}')
+                print(f'defaults/main.yml:\n{new_resource["answer"].output.defaults}')
+                print(f'files/config_file:\n{new_resource["answer"].output.files}')
+                print(f'meta/main.yml:\n{new_resource["answer"].output.meta}')
+                
             elif resource_type == "playbook":
-                print(new_resource.output.playbook)
+                print(new_resource["answer"].output.playbook)
 
             # Ask if the user wants to make changes
             make_changes = input(
@@ -172,25 +162,25 @@ class AnsibleResourceGenerator:
         if confirmation.lower() in ["yes", "y"]:
             if resource_type in ["role", "roles"]:
                 self.save_ansible_resource(
-                    new_resource.output.resource_type,
-                    new_resource.output.file_name,
+                    new_resource["answer"].output.resource_type,
+                    new_resource["answer"].output.file_name,
                     {
-                        "tasks/main.yml": new_resource.output.tasks,
-                        "handlers/main.yml": new_resource.output.handlers,
-                        "vars/main.yml": new_resource.output.vars,
-                        "defaults/main.yml": new_resource.output.defaults,
-                        "files/config_file": new_resource.output.files,
-                        "meta/main.yml": new_resource.output.meta,
+                        "tasks/main.yml": new_resource["answer"].output.tasks,
+                        "handlers/main.yml": new_resource["answer"].output.handlers,
+                        "vars/main.yml": new_resource["answer"].output.vars,
+                        "defaults/main.yml": new_resource["answer"].output.defaults,
+                        "files/config_file": new_resource["answer"].output.files,
+                        "meta/main.yml": new_resource["answer"].output.meta,
                     },
                 )
             elif resource_type in ["playbook", "playbooks"]:
                 self.save_ansible_resource(
-                    new_resource.output.resource_type,
-                    new_resource.output.file_name,
-                    new_resource.output.playbook,
+                    new_resource["answer"].output.resource_type,
+                    new_resource["answer"].output.file_name,
+                    new_resource["answer"].output.playbook,
                 )
         else:
-            print(f"{bcolors.FAIL}Operation cancelled by user.{bcolors.ENDC}")
+            print(f"{bcolors.OKCYAN}Happy to Help !{bcolors.ENDC}")
 
 if __name__ == "__main__":
     generator = AnsibleResourceGenerator()

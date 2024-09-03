@@ -1,2 +1,4 @@
 myenv/
+playbooks/
+roles/
 __pycache*
