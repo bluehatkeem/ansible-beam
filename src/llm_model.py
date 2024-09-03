@@ -63,15 +63,21 @@ class Resource(BaseModel):
 # Initialize OpenAI API key
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-# Initialize ChatOpenAI instance
-llm = ChatOpenAI(
-    model="gpt-4o",
-    temperature=0,
-)
+# Get the model type from environment variables
+model_type = os.getenv("CHAT_MODEL_TYPE", "gpt-4o")
 
-# llm = ChatAnthropic(
-#     model="claude-3-5-sonnet-20240620"
-# )
+# Initialize the appropriate chat model based on the environment variable
+if model_type.startswith("gpt"):
+    llm = ChatOpenAI(
+        model=model_type,
+        temperature=0,
+    )
+elif model_type.startswith("claude"):
+    llm = ChatAnthropic(
+        model=model_type,
+    )
+else:
+    raise ValueError(f"Unsupported model type: {model_type}")
 
 # Initialize YamlOutputParser instance
 parser = YamlOutputParser(pydantic_object=Resource)
@@ -106,9 +112,6 @@ pinecone_api_key = os.getenv("PINECONE_API_KEY")
 
 # Initialize Pinecone instance
 pc = Pinecone(api_key=pinecone_api_key)
-
-# Initialize ChatOpenAI instance
-model = ChatOpenAI(model="gpt-4o", temperature="0")
 
 # Initialize OpenAIEmbeddings instance
 embeddings = OpenAIEmbeddings()
