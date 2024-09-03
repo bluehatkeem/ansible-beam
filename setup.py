@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='ansible-beam',
-    version='0.1.0',
+    version='1.0.0',
     description='A project to generate Ansible playbooks and roles using AI',
     author='BlueHat Keem',
     author_email='keem@kubeworld.io',
