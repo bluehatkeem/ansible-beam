@@ -1,0 +1,13 @@
+- name: Disable Docker
+  hosts: all
+  become: yes
+  tasks:
+    - name: Stop Docker service
+      ansible.builtin.systemd:
+        name: docker
+        state: stopped
+
+    - name: Disable Docker service
+      ansible.builtin.systemd:
+        name: docker
+        enabled: no

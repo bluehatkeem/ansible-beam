@@ -1,6 +1,7 @@
 import os
 import nltk
 from dotenv import load_dotenv
+from dotenv import load_dotenv
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.chains.question_answering import load_qa_chain
 from langchain_community.document_loaders import DirectoryLoader
@@ -158,6 +159,8 @@ class AnsibleResourceGenerator:
         confirmation = input(
             f"{bcolors.WARNING}Do you want to save the generated Ansible resource? (yes/no): {bcolors.ENDC}"
         )
+
+        if confirmation.lower() in ["yes", "y"]:
 
         if confirmation.lower() in ["yes", "y"]:
             if resource_type in ["role", "roles"]:
