@@ -6,7 +6,7 @@ Welcome to **Ansible Beam**! This project leverages AI to generate Ansible playb
 
 Before you start, ensure you have the following:
 
-- Python installed
+- Python installed (v3.11 Works Best)
 - Ansible installed
 - A `.env` file with your own values
 
